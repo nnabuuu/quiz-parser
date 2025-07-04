@@ -1,0 +1,38 @@
+# Node modules
+node_modules/
+
+# Environment variables
+.env
+.env.*
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Compiled output
+dist/
+build/
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Editor settings
+.vscode/
+.idea/
+
+# Temp uploads (if you store files temporarily)
+temp/
+uploads/
+
+# Tests output
+coverage/
+*.lcov
+
+# Optional: ignore specific docx or test artifacts
+*.docx
+*.tmp
+
