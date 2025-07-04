@@ -11,7 +11,10 @@ import * as path from 'path';
 
 @Controller('docx')
 export class DocxController {
-    constructor(private readonly docxService: DocxService) {}
+
+    constructor(private readonly docxService: DocxService) {
+        console.log('DocxController initialized', this.docxService);
+    }
 
     @Post('upload')
     @UseInterceptors(FileInterceptor('file'))

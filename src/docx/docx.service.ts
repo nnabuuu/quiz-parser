@@ -1,12 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { XMLParser } from 'fast-xml-parser';
 import * as unzipper from 'unzipper';
+import { XMLParser } from 'fast-xml-parser';
 import * as fs from 'fs';
-import * as path from 'path';
 
 @Injectable()
 export class DocxService {
-    async extractYellowHighlights(filePath: string): Promise<any[]> {
+    async extractAllHighlights(filePath: string): Promise<any[]> {
         const zip = await unzipper.Open.file(filePath);
         const docXmlEntry = zip.files.find((f) => f.path === 'word/document.xml');
         if (!docXmlEntry) throw new Error('document.xml not found in .docx');
@@ -19,21 +18,37 @@ export class DocxService {
         const json = parser.parse(content.toString());
 
         const result: any[] = [];
-        const body = json['w:document']['w:body']['w:p'];
-        const paragraphs = Array.isArray(body) ? body : [body];
+        const body = json['w:document']?.['w:body'];
+        if (!body) return [];
+
+        const paragraphs = Array.isArray(body['w:p']) ? body['w:p'] : [body['w:p']];
 
         for (const p of paragraphs) {
-            const runs = Array.isArray(p['w:r']) ? p['w:r'] : [p['w:r']];
-            const highlighted: string[] = [];
+            if (!p || typeof p !== 'object') continue;
+
+            const runs = Array.isArray(p['w:r']) ? p['w:r'] : p['w:r'] ? [p['w:r']] : [];
             const allText: string[] = [];
+            const highlighted: { text: string; color: string }[] = [];
 
             for (const r of runs) {
-                const text = r['w:t']?.['#text'] || r['w:t'] || '';
-                allText.push(text);
+                if (!r || typeof r !== 'object') continue;
 
-                const highlight = r['w:rPr']?.['w:highlight']?.val || r['w:rPr']?.['w:highlight']?.['w:val'];
-                if (highlight === 'yellow') {
-                    highlighted.push(text);
+                const rawText = r['w:t'];
+                const text =
+                    typeof rawText === 'object' && rawText['#text']
+                        ? rawText['#text']
+                        : typeof rawText === 'string'
+                            ? rawText
+                            : '';
+
+                if (text) allText.push(text);
+
+                const highlight =
+                    r['w:rPr']?.['w:highlight']?.val ||
+                    r['w:rPr']?.['w:highlight']?.['w:val'];
+
+                if (highlight && text) {
+                    highlighted.push({ text, color: highlight });
                 }
             }
 
