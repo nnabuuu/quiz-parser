@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import * as unzipper from 'unzipper';
 import { XMLParser } from 'fast-xml-parser';
-import * as fs from 'fs';
 
 @Injectable()
 export class DocxService {
@@ -52,12 +51,11 @@ export class DocxService {
                 }
             }
 
-            if (highlighted.length > 0) {
-                result.push({
-                    paragraph: allText.join(''),
-                    highlighted,
-                });
-            }
+            // Always include the paragraph, even if no highlights
+            result.push({
+                paragraph: allText.join(''),
+                highlighted, // may be empty
+            });
         }
 
         return result;
