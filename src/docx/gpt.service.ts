@@ -31,7 +31,7 @@ export class GptService {
 - type: 题型，可选值为 "single-choice"、"multiple-choice"、"fill-in-the-blank"、"subjective"、"other"
 - question: 题干（注意如果输入的题干字符串以序号开头，则应该去除这些序号因为它们不属于题干的一部分）
 - options: 可选，仅适用于选择题
-- answer: 正确答案（选择题为索引数组，填空题、主观题和其他为 string，）
+- answer: 正确答案（single-choice、multiple-choice为索引数组，fill-in-the-blank为string数组，subjective、other为 string）
 
 请严格按照以下 schema 返回 JSON，结构为一个包含 items 字段的对象。`;
 
