@@ -41,6 +41,7 @@ export class GptService {
             strict: true,
             schema: {
                 type: 'object',
+                additionalProperties: false,
                 properties: {
                     items: {
                         type: 'array',
