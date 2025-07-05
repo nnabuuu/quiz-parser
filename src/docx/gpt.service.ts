@@ -66,7 +66,7 @@ export class GptService {
                                     ],
                                 },
                             },
-                            required: ['type', 'question'],
+                            required: ['type', 'question', 'options', 'answer'],
                         },
                     },
                 },
