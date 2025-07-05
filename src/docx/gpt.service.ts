@@ -33,7 +33,7 @@ export class GptService {
 - options: 可选，仅适用于选择题
 - answer: 正确答案（填空题为 string，选择题为索引数组，主观题为简短答案）
 
-请严格按照以下 schema 返回 JSON。`;
+请严格按照以下 schema 返回 JSON数组。`;
 
         const schema = {
             name: 'extract_quiz_items',
