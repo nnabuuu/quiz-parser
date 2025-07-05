@@ -47,6 +47,7 @@ export class GptService {
                         type: 'array',
                         items: {
                             type: 'object',
+                            additionalProperties: false,
                             properties: {
                                 type: {
                                     type: 'string',
