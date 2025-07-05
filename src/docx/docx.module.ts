@@ -5,7 +5,7 @@ import {GptController} from "./gpt.controller";
 import {GptService} from "./gpt.service";
 
 @Module({
-  providers: [DocxService, GptController],
-  controllers: [DocxController, GptService]
+  providers: [DocxService, GptService],
+  controllers: [DocxController, GptController]
 })
 export class DocxModule {}
