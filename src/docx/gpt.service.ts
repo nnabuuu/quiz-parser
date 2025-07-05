@@ -2,12 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 
-export interface ParagraphBlock {
+interface ParagraphBlock {
     paragraph: string;
     highlighted: { text: string; color: string }[];
 }
 
-export interface QuizItem {
+interface QuizItem {
     type: 'single-choice' | 'multiple-choice' | 'fill-in-the-blank' | 'subjective' | 'other';
     question: string;
     options?: string[];
@@ -33,36 +33,42 @@ export class GptService {
 - options: 可选，仅适用于选择题
 - answer: 正确答案（填空题为 string，选择题为索引数组，主观题为简短答案）
 
-请严格按照以下 schema 返回 JSON数组。`;
+请严格按照以下 schema 返回 JSON，结构为一个包含 items 字段的对象。`;
 
         const schema = {
             name: 'extract_quiz_items',
             description: '从段落中提取多种类型的题目',
             strict: true,
             schema: {
-                type: 'array',
-                items: {
-                    type: 'object',
-                    properties: {
-                        type: {
-                            type: 'string',
-                            enum: ['single-choice', 'multiple-choice', 'fill-in-the-blank', 'subjective', 'other'],
-                        },
-                        question: { type: 'string' },
-                        options: {
-                            type: 'array',
-                            items: { type: 'string' },
-                        },
-                        answer: {
-                            anyOf: [
-                                { type: 'string' },
-                                { type: 'array', items: { type: 'string' } },
-                                { type: 'array', items: { type: 'number' } },
-                            ],
+                type: 'object',
+                properties: {
+                    items: {
+                        type: 'array',
+                        items: {
+                            type: 'object',
+                            properties: {
+                                type: {
+                                    type: 'string',
+                                    enum: ['single-choice', 'multiple-choice', 'fill-in-the-blank', 'subjective', 'other'],
+                                },
+                                question: { type: 'string' },
+                                options: {
+                                    type: 'array',
+                                    items: { type: 'string' },
+                                },
+                                answer: {
+                                    anyOf: [
+                                        { type: 'string' },
+                                        { type: 'array', items: { type: 'string' } },
+                                        { type: 'array', items: { type: 'number' } },
+                                    ],
+                                },
+                            },
+                            required: ['type', 'question'],
                         },
                     },
-                    required: ['type', 'question'],
                 },
+                required: ['items'],
             },
         } as const;
 
@@ -82,7 +88,8 @@ export class GptService {
 
         const content = response.choices[0]?.message?.content;
         try {
-            return JSON.parse(content ?? '[]');
+            const parsed = JSON.parse(content ?? '{}');
+            return parsed.items ?? [];
         } catch (error) {
             return [{ type: 'other', question: 'GPT 返回解析失败', answer: content }] as QuizItem[];
         }
