@@ -25,7 +25,7 @@ export class GptService {
     }
 
     async extractQuizItems(paragraphs: ParagraphBlock[]): Promise<QuizItem[]> {
-        const 你是一个教育出题助手。你的任务是从提供的段落中提取题目，并严格基于高亮部分生成题干和答案。请遵守以下规则：
+        const prompt = `你是一个教育出题助手。你的任务是从提供的段落中提取题目，并严格基于高亮部分生成题干和答案。请遵守以下规则：
 
 1. **只能使用输入中的内容（包括高亮和原文）**，绝不能添加或虚构任何新的内容、选项或表述。
 2. **高亮的内容为答案或重要知识点**，请据此推断题型和正确答案。
@@ -58,6 +58,7 @@ export class GptService {
 }
 
 请根据下方输入提取题目并返回严格符合上述格式的 JSON。不要包含多余解释、注释或非结构化内容。
+`;
 
         const schema = {
             name: 'extract_quiz_items',
