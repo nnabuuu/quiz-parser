@@ -26,6 +26,8 @@ export class GptService {
 
     async extractQuizItems(paragraphs: ParagraphBlock[]): Promise<QuizItem[]> {
         const prompt = `你是一个教育出题助手。以下是一组段落（包括题干、选项和高亮信息）。请从中提取题目，并判断题型。
+        
+        注意：请只从输入中提取，而不要添加输入中不存在的内容，高亮标记为正确答案。
 
 每道题返回：
 - type: 题型，可选值为 "single-choice"、"multiple-choice"、"fill-in-the-blank"、"subjective"、"other"
