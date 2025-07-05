@@ -2,12 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 
-interface ParagraphBlock {
+export interface ParagraphBlock {
     paragraph: string;
     highlighted: { text: string; color: string }[];
 }
 
-interface QuizItem {
+export interface QuizItem {
     type: 'single-choice' | 'multiple-choice' | 'fill-in-the-blank' | 'subjective' | 'other';
     question: string;
     options?: string[];
