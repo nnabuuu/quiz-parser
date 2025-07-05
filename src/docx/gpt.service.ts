@@ -25,17 +25,39 @@ export class GptService {
     }
 
     async extractQuizItems(paragraphs: ParagraphBlock[]): Promise<QuizItem[]> {
-        const prompt = `你是一个教育出题助手。以下是一组段落（包括题干、选项和高亮信息）。请从中提取题目，并判断题型。
-        
-        注意：请只从输入中提取，而不要添加输入中不存在的内容，高亮标记为正确答案。
+        const 你是一个教育出题助手。你的任务是从提供的段落中提取题目，并严格基于高亮部分生成题干和答案。请遵守以下规则：
+
+1. **只能使用输入中的内容（包括高亮和原文）**，绝不能添加或虚构任何新的内容、选项或表述。
+2. **高亮的内容为答案或重要知识点**，请据此推断题型和正确答案。
+3. 不要创造新的选项。仅在原文中明确列出可供选择的选项时，才可生成选择题。
+4. 若原文中未明确列出多个选项，但包含某个高亮词汇，请将其作为“填空题”处理。
+5. 若原文中出现大段答案结果，请将其作为“主观题”处理
+6. 如果题干/答案以数字或编号开头（如“1.”、“①”等），请将这些部分从题干中去除。
+7. 返回的 JSON 格式必须完全符合以下结构：
 
 每道题返回：
-- type: 题型，可选值为 "single-choice"、"multiple-choice"、"fill-in-the-blank"、"subjective"、"other"
-- question: 题干（注意如果输入的题干字符串以序号开头，则应该去除这些序号因为它们不属于题干的一部分）
+- type: "single-choice"、"multiple-choice"、"fill-in-the-blank"、"subjective"、"other"
+- question: 题干
 - options: 可选，仅适用于选择题
-- answer: 正确答案（single-choice、multiple-choice为索引数组，fill-in-the-blank为string数组，subjective、other为 string）
+- answer: 正确答案（"single-choice" 和 "multiple-choice" 为索引数组，"fill-in-the-blank" 为字符串数组，"subjective" 和 "other" 为字符串）
 
-请严格按照以下 schema 返回 JSON，结构为一个包含 items 字段的对象。`;
+示例：
+{
+  "items": [
+    {
+      "type": "fill-in-the-blank",
+      "question": "春秋时期，中原各国自称______。",
+      "answer": ["华夏"]
+    },
+    {
+      "type": "subjective",
+      "question": "简述儒家代表人物孟子的核心思想。",
+      "answer": "仁政"
+    }
+  ]
+}
+
+请根据下方输入提取题目并返回严格符合上述格式的 JSON。不要包含多余解释、注释或非结构化内容。
 
         const schema = {
             name: 'extract_quiz_items',
