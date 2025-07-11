@@ -121,4 +121,89 @@ export class GptService {
             return [{ type: 'other', question: 'GPT 返回解析失败', answer: content }] as QuizItem[];
         }
     }
+
+    async polishQuizItem(item: QuizItem): Promise<QuizItem> {
+        const prompt = `你是一名教育编辑助手，请在保持题目含义、选项和答案不变的情况下润色题干，使其表述更完整或更具有场景感。只修改 question 字段，返回 JSON。`;
+        const schema = {
+            name: 'polish_quiz_item',
+            description: '润色题干但保持题目其他部分不变',
+            strict: true,
+            schema: {
+                type: 'object',
+                additionalProperties: false,
+                properties: {
+                    type: { type: 'string' },
+                    question: { type: 'string' },
+                    options: { type: 'array', items: { type: 'string' } },
+                    answer: {
+                        anyOf: [
+                            { type: 'string' },
+                            { type: 'array', items: { type: 'string' } },
+                            { type: 'array', items: { type: 'number' } },
+                        ],
+                    },
+                },
+                required: ['type', 'question', 'options', 'answer'],
+            },
+        } as const;
+
+        const response = await this.openai.chat.completions.create({
+            model: 'gpt-4o',
+            messages: [
+                { role: 'user', content: prompt + '\n\n' + JSON.stringify(item) },
+            ],
+            response_format: { type: 'json_schema', json_schema: schema },
+        });
+
+        const content = response.choices[0]?.message?.content;
+        try {
+            return JSON.parse(content ?? '{}') as QuizItem;
+        } catch (error) {
+            return { ...item, question: 'GPT 返回解析失败: ' + content } as QuizItem;
+        }
+    }
+
+    async changeQuizItemType(item: QuizItem, newType: QuizItem['type']): Promise<QuizItem> {
+        const prompt = `请将下列题目转换为 ${newType} 类型，并根据需要调整题干、选项和答案。返回 JSON。`;
+        const schema = {
+            name: 'change_quiz_item_type',
+            description: '将题目转换为其他类型',
+            strict: true,
+            schema: {
+                type: 'object',
+                additionalProperties: false,
+                properties: {
+                    type: {
+                        type: 'string',
+                        enum: ['single-choice', 'multiple-choice', 'fill-in-the-blank', 'subjective', 'other'],
+                    },
+                    question: { type: 'string' },
+                    options: { type: 'array', items: { type: 'string' } },
+                    answer: {
+                        anyOf: [
+                            { type: 'string' },
+                            { type: 'array', items: { type: 'string' } },
+                            { type: 'array', items: { type: 'number' } },
+                        ],
+                    },
+                },
+                required: ['type', 'question', 'options', 'answer'],
+            },
+        } as const;
+
+        const response = await this.openai.chat.completions.create({
+            model: 'gpt-4o',
+            messages: [
+                { role: 'user', content: prompt + '\n\n' + JSON.stringify(item) },
+            ],
+            response_format: { type: 'json_schema', json_schema: schema },
+        });
+
+        const content = response.choices[0]?.message?.content;
+        try {
+            return JSON.parse(content ?? '{}') as QuizItem;
+        } catch (error) {
+            return { ...item, type: newType, question: 'GPT 返回解析失败: ' + content } as QuizItem;
+        }
+    }
 }
