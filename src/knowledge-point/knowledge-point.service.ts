@@ -1,5 +1,5 @@
 // src/knowledge-point/knowledge-point.service.ts
-import { Injectable } from '@nestjs/common';
+import {Injectable, Logger} from '@nestjs/common';
 import { KnowledgePointGPTService } from './knowledge-point-gpt.service';
 import { KnowledgePointEmbeddingService } from './knowledge-point-embedding.service';
 import { KnowledgePointStorage, KnowledgePoint } from './knowledge-point.storage';
@@ -7,14 +7,18 @@ import {QuizItem} from "../docx/gpt.service";
 
 @Injectable()
 export class KnowledgePointService {
+
+    private readonly logger = new Logger(KnowledgePointService.name);
+
     constructor(
         private readonly gpt: KnowledgePointGPTService,
         private readonly embedding: KnowledgePointEmbeddingService,
-        private readonly storage: KnowledgePointStorage,
     ) {}
 
     async matchKnowledgePointFromQuiz(quiz: QuizItem): Promise<KnowledgePoint | null> {
 
+        this.logger.log(`正在处理quiz: ${quiz}`);
+        
         let inputQuizString = `Question: ${quiz.question}`;
         if(quiz.options) {
             inputQuizString += ` Options: ${quiz.options}`;
