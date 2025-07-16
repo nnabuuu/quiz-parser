@@ -42,6 +42,8 @@ export class KnowledgePointService {
         // 步骤 3：过滤unit
         const unitFilter = await this.gpt.suggestUnitsByCountryAndDynasty(inputQuizString, units);
 
+        this.logger.log(JSON.stringify(unitFilter));
+
         // 步骤 4：匹配 top 5 子目
         const topSubMatches = this.embedding.getTopMatches(inputEmbedding, unitFilter, 5);
 
@@ -50,7 +52,9 @@ export class KnowledgePointService {
             candidates: match.knowledgePoints,
         }));
 
-        // 步骤 4：使用 GPT 从 topN 子目中选知识点
+        this.logger.log(JSON.stringify(subGroups));
+
+        // 步骤 5：使用 GPT 从 topN 子目中选知识点
 
         const selectedId = await this.gpt.disambiguateTopicFromCandidates(
             inputQuizString,
