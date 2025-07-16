@@ -5,6 +5,9 @@ import { KnowledgePoint, KnowledgePointStorage } from './knowledge-point.storage
 import { ConfigService } from '@nestjs/config';
 
 export interface EmbeddingGroup {
+    volume: string; // e.g. 中外历史纲要上
+    unit: string;   // e.g. 第一单元 从中华文明起源到秦汉统一...
+    lesson: string; // e.g. 第2课 诸侯纷争与变法运动
     sub: string;
     text: string;
     embedding?: number[];
@@ -36,7 +39,6 @@ export class KnowledgePointEmbeddingService implements OnModuleInit {
         const sectionPath = path.resolve(__dirname, '../../data/knowledge-point-section.embedding.json');
         const cachePath = path.resolve(__dirname, '../../data/embedding-cache.json');
 
-        // 加载 embedding 缓存
         try {
             const cacheRaw = await fs.readFile(cachePath, 'utf8');
             this.embeddingCache = JSON.parse(cacheRaw);
@@ -58,24 +60,18 @@ export class KnowledgePointEmbeddingService implements OnModuleInit {
         const groups: EmbeddingGroup[] = [];
         const batchTexts: string[] = [];
         const subKeys: string[] = [];
-        const subToKPs: Map<string, KnowledgePoint[]> = new Map();
 
-        for (const [sub, kps] of groupMap.entries()) {
+        for (const [key, kps] of groupMap.entries()) {
+            const [volume, unit, lesson, sub] = key.split(':');
             const text = `${sub}：${kps.map((k) => k.topic).join('；')}`;
             batchTexts.push(text);
-            subKeys.push(sub);
-            subToKPs.set(sub, kps);
+            subKeys.push(key);
+            groups.push({ volume, unit, lesson, sub, text, knowledgePoints: kps });
         }
 
         const embeddings = await this.getBatchEmbeddings(batchTexts);
-
         for (let i = 0; i < embeddings.length; i++) {
-            groups.push({
-                sub: subKeys[i],
-                text: batchTexts[i],
-                embedding: embeddings[i],
-                knowledgePoints: subToKPs.get(subKeys[i])!,
-            });
+            groups[i].embedding = embeddings[i];
         }
 
         this.subEmbeddings = groups;
@@ -108,7 +104,6 @@ export class KnowledgePointEmbeddingService implements OnModuleInit {
                 this.embeddingCache[uncachedTexts[i]] = res.data[i].embedding;
             }
 
-            // 写入更新后的缓存
             await fs.writeFile(cachePath, JSON.stringify(this.embeddingCache, null, 2), 'utf8');
             console.log(`[Embedding] Cached ${uncachedTexts.length} new embeddings`);
         }
@@ -137,11 +132,12 @@ export class KnowledgePointEmbeddingService implements OnModuleInit {
         return embedding;
     }
 
-    getTopMatches(inputEmbedding: number[], topN = 3): EmbeddingGroup[] {
+    getTopMatches(inputEmbedding: number[], unitFilter: string[] = [], topN = 3): EmbeddingGroup[] {
         return [...this.subEmbeddings]
-            .map((group) => ({
+            .filter(group => unitFilter.length === 0 || unitFilter.includes(group.unit))
+            .map(group => ({
                 ...group,
-                score: this.cosineSimilarity(inputEmbedding, group.embedding),
+                score: this.cosineSimilarity(inputEmbedding, group.embedding!),
             }))
             .sort((a, b) => b.score - a.score)
             .slice(0, topN);

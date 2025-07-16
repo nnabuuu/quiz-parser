@@ -75,6 +75,64 @@ export class KnowledgePointGPTService {
         }
     }
 
+    async suggestUnitsByCountryAndDynasty(
+        quizText: string,
+        units: string[],
+    ): Promise<string[]> {
+        const schema = {
+            name: 'suggest_units',
+            description: '根据试题提到的国家和朝代，返回最相关教学单元在原始列表中的索引（从0开始）',
+            strict: true,
+            schema: {
+                type: 'object',
+                properties: {
+                    indexes: {
+                        type: 'array',
+                        description: '最相关教学单元在原始输入数组中的索引，按相关性降序排列，最多返回3个',
+                        items: { type: 'integer' },
+                        minItems: 1,
+                        maxItems: 3,
+                    },
+                },
+                required: ['indexes'],
+                additionalProperties: false,
+            },
+        };
+
+        const prompt = `你是一位中学历史教学专家。
+
+请根据以下选择题内容，分析其涉及的国家、朝代或历史语境，并从提供的教学单元中选择最相关的 1-3 个。
+
+请只返回这些教学单元在原始输入数组中的索引（从0开始计数）。例如，如果你选择了第1、3、5项，则返回 [1, 3, 5]。
+
+题目内容如下：
+${quizText}
+
+可供选择的教学单元包括：
+${units.map((u, i) => `索引 ${i}: ${u}`).join('\n')}
+
+你应根据国家、时代背景、关键词、设问重点等维度，判断哪几个单元最可能与该题有关。`;
+
+        const response = await this.openai.chat.completions.create({
+            model: 'gpt-4o',
+            messages: [{ role: 'user', content: prompt }],
+            response_format: {
+                type: 'json_schema',
+                json_schema: schema,
+            },
+        });
+
+        try {
+            const parsed = JSON.parse(response.choices[0].message?.content || '{}');
+            const indexes: number[] = parsed.indexes ?? [];
+            return indexes.map(i => units[i]).filter(Boolean);
+        } catch {
+            return [];
+        }
+    }
+
+
+
     async disambiguateTopicFromCandidates(
         quizText: string,
         subGroups: { sub: string; candidates: KnowledgePoint[] }[],

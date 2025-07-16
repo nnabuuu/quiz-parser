@@ -1,8 +1,8 @@
 // src/knowledge-point/knowledge-point.service.ts
 import { Injectable, Logger} from '@nestjs/common';
 import { KnowledgePointGPTService } from './knowledge-point-gpt.service';
-import { EmbeddingGroup, KnowledgePointEmbeddingService} from './knowledge-point-embedding.service';
-import { KnowledgePoint } from './knowledge-point.storage';
+import { KnowledgePointEmbeddingService} from './knowledge-point-embedding.service';
+import {KnowledgePoint, KnowledgePointStorage} from './knowledge-point.storage';
 import {QuizItem} from "../docx/gpt.service";
 
 @Injectable()
@@ -13,6 +13,7 @@ export class KnowledgePointService {
     constructor(
         private readonly gpt: KnowledgePointGPTService,
         private readonly embedding: KnowledgePointEmbeddingService,
+        private readonly storage: KnowledgePointStorage
     ) {}
 
     async matchKnowledgePointFromQuiz(quiz: QuizItem): Promise<{matched: KnowledgePoint | null, keywords: string[], country: string, dynasty: string, candidates: {sub: string, candidates: KnowledgePoint[]}[]}> {
@@ -36,8 +37,13 @@ export class KnowledgePointService {
         const searchText = `${country}-${dynasty}-${keywords.join('；')}`;
         const inputEmbedding = await this.embedding.getEmbedding(searchText);
 
-        // 步骤 3：匹配 top 5 子目
-        const topSubMatches = this.embedding.getTopMatches(inputEmbedding, 5);
+        const units = await this.storage.getAllUnits();
+
+        // 步骤 3：过滤unit
+        const unitFilter = await this.gpt.suggestUnitsByCountryAndDynasty(inputQuizString, units);
+
+        // 步骤 4：匹配 top 5 子目
+        const topSubMatches = this.embedding.getTopMatches(inputEmbedding, unitFilter, 5);
 
         const subGroups = topSubMatches.map((match) => ({
             sub: match.sub,

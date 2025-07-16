@@ -2,6 +2,7 @@ import {Injectable, Logger, OnModuleInit} from '@nestjs/common';
 import * as XLSX from 'xlsx';
 import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import _ from 'lodash';
 
 /**
  * 表示从课程知识点表格中提取出的单个知识点。
@@ -35,6 +36,11 @@ export class KnowledgePointStorage implements OnModuleInit {
 
     getAllKnowledgePoints(): KnowledgePoint[] {
         return this.knowledgePoints;
+    }
+
+    getAllUnits(): string[] {
+        return _.uniqBy(this.knowledgePoints, kp => `${kp.volume}::${kp.unit}`)
+            .map(kp => `${kp.volume}::${kp.unit}`);
     }
 
     private loadKnowledgePoints(): KnowledgePoint[] {

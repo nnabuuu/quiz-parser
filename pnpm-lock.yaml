@@ -20,6 +20,9 @@ dependencies:
   fast-xml-parser:
     specifier: ^5.2.5
     version: 5.2.5
+  lodash:
+    specifier: ^4.17.21
+    version: 4.17.21
   multer:
     specifier: ^2.0.1
     version: 2.0.1
@@ -61,6 +64,9 @@ devDependencies:
   '@types/jest':
     specifier: ^29.5.2
     version: 29.5.14
+  '@types/lodash':
+    specifier: ^4.17.20
+    version: 4.17.20
   '@types/multer':
     specifier: ^2.0.0
     version: 2.0.0
@@ -1237,6 +1243,10 @@ packages:
 
   /@types/json-schema@7.0.15:
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
+    dev: true
+
+  /@types/lodash@4.17.20:
+    resolution: {integrity: sha512-H3MHACvFUEiujabxhaI/ImO6gUrd8oOurg7LQtS7mbwIXA/cUqWrvBsaeJ23aZEPk1TAYkurjfMbSELfoCXlGA==}
     dev: true
 
   /@types/methods@1.1.4:
