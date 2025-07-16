@@ -1,5 +1,5 @@
 // src/knowledge-point/knowledge-point-gpt.service.ts
-import { Injectable } from '@nestjs/common';
+import {Injectable, Logger} from '@nestjs/common';
 import OpenAI from 'openai';
 import {ConfigService} from "@nestjs/config";
 import {KnowledgePoint, KnowledgePointStorage} from "./knowledge-point.storage";
@@ -7,6 +7,7 @@ import {KnowledgePoint, KnowledgePointStorage} from "./knowledge-point.storage";
 @Injectable()
 export class KnowledgePointGPTService {
     private readonly openai: OpenAI;
+    private readonly logger = new Logger(KnowledgePointGPTService.name);
 
     constructor(private readonly configService: ConfigService,
                 private readonly knowledgePointStorage: KnowledgePointStorage) {
@@ -72,6 +73,13 @@ export class KnowledgePointGPTService {
         quizText: string,
         subGroups: { sub: string; candidates: KnowledgePoint[] }[],
     ): Promise<string> {
+
+        this.logger.log(`筛选知识点：
+        ${quizText}
+        Candidates:
+        ${JSON.stringify(subGroups)}
+        `);
+
         const schema = {
             name: 'disambiguate_topic',
             description: '从多个子目的候选知识点中选择最相关的一项',
@@ -124,6 +132,9 @@ export class KnowledgePointGPTService {
         });
 
         const raw = response.choices[0].message?.content;
+
+        this.logger.log(`筛选结果： ${raw}`);
+
         try {
             const parsed = JSON.parse(raw || '');
             return parsed.selectedId ?? '';
