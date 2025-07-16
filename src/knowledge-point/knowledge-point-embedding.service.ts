@@ -7,7 +7,7 @@ import { ConfigService } from '@nestjs/config';
 export interface EmbeddingGroup {
     sub: string;
     text: string;
-    embedding: number[];
+    embedding?: number[];
     knowledgePoints: KnowledgePoint[];
 }
 

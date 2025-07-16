@@ -15,7 +15,7 @@ export class KnowledgePointService {
         private readonly embedding: KnowledgePointEmbeddingService,
     ) {}
 
-    async matchKnowledgePointFromQuiz(quiz: QuizItem): Promise<{matched: KnowledgePoint | null, keywords: string[], country: string, dynasty: string, candidates: EmbeddingGroup[]}> {
+    async matchKnowledgePointFromQuiz(quiz: QuizItem): Promise<{matched: KnowledgePoint | null, keywords: string[], country: string, dynasty: string, candidates: {sub: string, candidates: KnowledgePoint[]}[]}> {
 
         let inputQuizString = `Question: ${quiz.question}`;
         if(quiz.options) {
@@ -52,6 +52,6 @@ export class KnowledgePointService {
         );
 
         const found = subGroups.flatMap(g => g.candidates).find(kp => kp.id === selectedId);
-        return {matched: found ?? null, keywords, country, dynasty, candidates: topSubMatches};
+        return {matched: found ?? null, keywords, country, dynasty, candidates: subGroups};
     }
 }
