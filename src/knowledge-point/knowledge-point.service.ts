@@ -37,7 +37,7 @@ export class KnowledgePointService {
         const searchText = `${country}-${dynasty}-${keywords.join('；')}`;
         const inputEmbedding = await this.embedding.getEmbedding(searchText);
 
-        const units = await this.storage.getAllUnits();
+        const units = this.storage.getAllUnits();
 
         // 步骤 3：过滤unit
         const unitFilter = await this.gpt.suggestUnitsByCountryAndDynasty(inputQuizString, units);

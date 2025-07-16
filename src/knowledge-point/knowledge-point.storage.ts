@@ -39,8 +39,7 @@ export class KnowledgePointStorage implements OnModuleInit {
     }
 
     getAllUnits(): string[] {
-        return _.uniqBy(this.knowledgePoints, kp => `${kp.volume}::${kp.unit}`)
-            .map(kp => `${kp.volume}::${kp.unit}`);
+        return _.uniqBy(this.knowledgePoints, 'unit').map(kp => kp.unit);
     }
 
     private loadKnowledgePoints(): KnowledgePoint[] {
