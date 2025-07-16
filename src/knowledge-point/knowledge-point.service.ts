@@ -36,8 +36,8 @@ export class KnowledgePointService {
         const searchText = `${country}-${dynasty}-${keywords.join('；')}`;
         const inputEmbedding = await this.embedding.getEmbedding(searchText);
 
-        // 步骤 3：匹配 top 3 子目
-        const topSubMatches = this.embedding.getTopMatches(inputEmbedding, 3);
+        // 步骤 3：匹配 top 5 子目
+        const topSubMatches = this.embedding.getTopMatches(inputEmbedding, 5);
 
         const subGroups = topSubMatches.map((match) => ({
             sub: match.sub,
@@ -45,6 +45,7 @@ export class KnowledgePointService {
         }));
 
         // 步骤 4：使用 GPT 从 topN 子目中选知识点
+
         const selectedId = await this.gpt.disambiguateTopicFromCandidates(
             inputQuizString,
             subGroups,
