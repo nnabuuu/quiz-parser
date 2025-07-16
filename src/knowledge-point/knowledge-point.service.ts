@@ -42,7 +42,7 @@ export class KnowledgePointService {
         this.logger.log(JSON.stringify(unitFilter));
 
         // 步骤 4：找到知识点集合
-       const kps = this.storage.getKnowledgePointsByIds(unitFilter);
+       const kps = this.storage.getKnowledgePointsByUnits(unitFilter);
        this.logger.log(`备选知识点：`)
         this.logger.log(JSON.stringify(kps));
         // 步骤 5：使用 GPT 从 topN 子目中选知识点
