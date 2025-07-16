@@ -217,7 +217,7 @@ ${JSON.stringify(knowledgePoints, null, 2)}
 
         const prompt = `你是一位中学历史命题与教学专家，擅长分析历史选择题背后的考查意图。
 
-请根据下列选择题内容、子目分类和提供的多个候选知识点，选择其中最贴切、最能准确覆盖该题目考查核心的知识点，并返回其 ID。
+请根据下列选择题内容、子目分类和提供的多个候选知识点，选择其中最贴切、最能准确覆盖该题目考查意图的知识点，并返回其 ID。
 
 同时返回不超过三个相关度较高的备选知识点 ID（包括最终选中的）。
 
@@ -239,7 +239,7 @@ ${hierarchyDescription}
 最终请返回 JSON，包含 selectedId 和 candidateIds 字段（candidateIds 应该是包含 selectedId 的最多三个候选 ID）。`;
 
         const response = await this.openai.chat.completions.create({
-            model: 'gpt-4o',
+            model: 'gpt-4.1',
             messages: [
                 {
                     role: 'user',
