@@ -33,9 +33,6 @@ export class KnowledgePointService {
         const {keywords, country, dynasty} = await this.gpt.extractKeywordsFromQuiz(inputQuizString);
         if (keywords.length === 0) return null;
 
-        // 步骤 2：将关键词拼成一段用于 embedding
-        const searchText = `${country}-${dynasty}-${keywords.join('；')}`;
-        const inputEmbedding = await this.embedding.getEmbedding(searchText);
 
         const units = this.storage.getAllUnits();
 
@@ -46,7 +43,8 @@ export class KnowledgePointService {
 
         // 步骤 4：找到知识点集合
        const kps = this.storage.getKnowledgePointsByIds(unitFilter);
-
+       this.logger.log(`备选知识点：`)
+        this.logger.log(JSON.stringify(kps));
         // 步骤 5：使用 GPT 从 topN 子目中选知识点
 
         const {selectedId, candidateIds} = await this.gpt.disambiguateTopicFromCandidates(
