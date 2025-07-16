@@ -2,7 +2,7 @@ import {Injectable, Logger, OnModuleInit} from '@nestjs/common';
 import * as XLSX from 'xlsx';
 import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import _ from 'lodash';
+import * as _ from 'lodash';
 
 /**
  * 表示从课程知识点表格中提取出的单个知识点。
