@@ -96,7 +96,17 @@ export class KnowledgePointGPTService {
             candidates: candidates.map(({ id, topic }) => ({ id, topic })),
         };
 
-        const prompt = `你是一个教育专家，请根据以下试题内容和子目，从候选知识点中选出最匹配的一项，并返回其 ID。`;
+        const prompt = `你是一位中学历史命题与教学专家。
+
+请根据下列选择题内容、子目分类和提供的多个候选知识点，选择其中最贴切、最能准确覆盖该题目考查核心的知识点，并返回其 ID。
+
+你应优先参考：
+1. 试题的设问重点与叙述语境；
+2. 标准答案所指向的概念；
+3. 子目的语义分类；
+4. 候选知识点之间的差异性。
+
+最终请只返回一个知识点的 ID，对应最贴合的知识点。`;
 
         const response = await this.openai.chat.completions.create({
             model: 'gpt-4o',
