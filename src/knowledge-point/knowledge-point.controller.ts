@@ -9,6 +9,6 @@ export class KnowledgePointController {
     @Post('match')
     async matchQuiz(@Body() quiz: QuizItem) {
         const result = await this.knowledgePointService.matchKnowledgePointFromQuiz(quiz);
-        return { matchedKnowledgePoint: result };
+        return { matched: result };
     }
 }
