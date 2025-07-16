@@ -1,8 +1,8 @@
 // src/knowledge-point/knowledge-point.service.ts
-import {Injectable, Logger} from '@nestjs/common';
+import { Injectable, Logger} from '@nestjs/common';
 import { KnowledgePointGPTService } from './knowledge-point-gpt.service';
-import { KnowledgePointEmbeddingService } from './knowledge-point-embedding.service';
-import { KnowledgePointStorage, KnowledgePoint } from './knowledge-point.storage';
+import { EmbeddingGroup, KnowledgePointEmbeddingService} from './knowledge-point-embedding.service';
+import { KnowledgePoint } from './knowledge-point.storage';
 import {QuizItem} from "../docx/gpt.service";
 
 @Injectable()
@@ -15,7 +15,7 @@ export class KnowledgePointService {
         private readonly embedding: KnowledgePointEmbeddingService,
     ) {}
 
-    async matchKnowledgePointFromQuiz(quiz: QuizItem): Promise<KnowledgePoint | null> {
+    async matchKnowledgePointFromQuiz(quiz: QuizItem): Promise<{matched: KnowledgePoint | null, keywords: string[], candidates: EmbeddingGroup[]}> {
 
         let inputQuizString = `Question: ${quiz.question}`;
         if(quiz.options) {
@@ -51,6 +51,6 @@ export class KnowledgePointService {
         );
 
         const found = subGroups.flatMap(g => g.candidates).find(kp => kp.id === selectedId);
-        return found ?? null;
+        return {matched: found ?? null, keywords, candidates: topSubMatches};
     }
 }

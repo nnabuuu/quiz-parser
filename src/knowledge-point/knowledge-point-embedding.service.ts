@@ -4,7 +4,7 @@ import OpenAI from 'openai';
 import { KnowledgePoint, KnowledgePointStorage } from './knowledge-point.storage';
 import { ConfigService } from '@nestjs/config';
 
-interface EmbeddingGroup {
+export interface EmbeddingGroup {
     sub: string;
     text: string;
     embedding: number[];
