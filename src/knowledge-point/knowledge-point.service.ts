@@ -17,8 +17,6 @@ export class KnowledgePointService {
 
     async matchKnowledgePointFromQuiz(quiz: QuizItem): Promise<KnowledgePoint | null> {
 
-        this.logger.log(`正在处理quiz: ${quiz}`);
-        
         let inputQuizString = `Question: ${quiz.question}`;
         if(quiz.options) {
             inputQuizString += ` Options: ${quiz.options}`;
@@ -26,6 +24,9 @@ export class KnowledgePointService {
         if(quiz.answer) {
             inputQuizString += ` Answer: ${quiz.answer}`;
         }
+
+        this.logger.log(`正在处理quiz: ${JSON.stringify(quiz)}`);
+        this.logger.log(`提取出的inputQuizString: ${inputQuizString}`)
 
         // 步骤 1：提取关键词
         const keywords = await this.gpt.extractKeywordsFromQuiz(inputQuizString);
