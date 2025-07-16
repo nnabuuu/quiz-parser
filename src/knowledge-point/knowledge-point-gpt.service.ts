@@ -70,12 +70,11 @@ export class KnowledgePointGPTService {
 
     async disambiguateTopicFromCandidates(
         quizText: string,
-        sub: string,
-        candidates: KnowledgePoint[],
+        subGroups: { sub: string; candidates: KnowledgePoint[] }[],
     ): Promise<string> {
         const schema = {
             name: 'disambiguate_topic',
-            description: '从候选知识点中选择最相关的一项',
+            description: '从多个子目的候选知识点中选择最相关的一项',
             strict: true,
             schema: {
                 type: 'object',
@@ -90,15 +89,17 @@ export class KnowledgePointGPTService {
             },
         };
 
-        const paragraphs = {
+        const data = {
             quiz: quizText,
-            sub,
-            candidates: candidates.map(({ id, topic }) => ({ id, topic })),
+            groups: subGroups.map((group) => ({
+                sub: group.sub,
+                candidates: group.candidates.map(({ id, topic }) => ({ id, topic })),
+            })),
         };
 
         const prompt = `你是一位中学历史命题与教学专家。
 
-请根据下列选择题内容、子目分类和提供的多个候选知识点，选择其中最贴切、最能准确覆盖该题目考查核心的知识点，并返回其 ID。
+请根据下列选择题内容、各子目分类和提供的多个候选知识点，选择其中最贴切、最能准确覆盖该题目考查核心的知识点，并返回其 ID。
 
 你应优先参考：
 1. 试题的设问重点与叙述语境；
@@ -113,7 +114,7 @@ export class KnowledgePointGPTService {
             messages: [
                 {
                     role: 'user',
-                    content: prompt + '\n\n' + JSON.stringify(paragraphs, null, 2),
+                    content: prompt + '\n\n' + JSON.stringify(data, null, 2),
                 },
             ],
             response_format: {

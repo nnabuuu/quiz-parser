@@ -1,7 +1,8 @@
+// src/knowledge-point/knowledge-point-embedding.service.ts
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import OpenAI from 'openai';
-import {KnowledgePoint, KnowledgePointStorage} from "./knowledge-point.storage";
-import {ConfigService} from "@nestjs/config";
+import { KnowledgePoint, KnowledgePointStorage } from './knowledge-point.storage';
+import { ConfigService } from '@nestjs/config';
 
 interface EmbeddingGroup {
     sub: string;
@@ -14,31 +15,35 @@ interface EmbeddingGroup {
 export class KnowledgePointEmbeddingService implements OnModuleInit {
     private readonly openai: OpenAI;
     private subEmbeddings: EmbeddingGroup[] = [];
+    private embeddingCache: Record<string, number[]> = {};
 
-    constructor(private readonly configService: ConfigService,
-                private readonly knowledgePointStorage: KnowledgePointStorage) {
+    constructor(
+        private readonly configService: ConfigService,
+        private readonly knowledgePointStorage: KnowledgePointStorage,
+    ) {
         this.openai = new OpenAI({
             apiKey: this.configService.get<string>('OPENAI_API_KEY'),
         });
     }
 
-    onModuleInit() {
-        this.initializeEmbeddings();
+    async onModuleInit() {
+        await this.initializeEmbeddings();
     }
 
     private async initializeEmbeddings() {
         const fs = await import('fs/promises');
         const path = await import('path');
-        const savePath = path.resolve(__dirname, '../../data/knowledge-point-section.embedding.json');
+        const sectionPath = path.resolve(__dirname, '../../data/knowledge-point-section.embedding.json');
+        const cachePath = path.resolve(__dirname, '../../data/embedding-cache.json');
 
-        // 尝试读取缓存
+        // 加载 embedding 缓存
         try {
-            const cached = await fs.readFile(savePath, 'utf8');
-            this.subEmbeddings = JSON.parse(cached);
-            console.log('[Embedding] Loaded from cache');
-            return;
+            const cacheRaw = await fs.readFile(cachePath, 'utf8');
+            this.embeddingCache = JSON.parse(cacheRaw);
+            console.log('[Embedding] Loaded cache');
         } catch {
-            console.log('[Embedding] No cache found, generating embeddings...');
+            this.embeddingCache = {};
+            console.log('[Embedding] No cache found, starting fresh');
         }
 
         const all = this.knowledgePointStorage.getAllKnowledgePoints();
@@ -46,9 +51,7 @@ export class KnowledgePointEmbeddingService implements OnModuleInit {
 
         for (const kp of all) {
             const key = kp.sub;
-            if (!groupMap.has(key)) {
-                groupMap.set(key, []);
-            }
+            if (!groupMap.has(key)) groupMap.set(key, []);
             groupMap.get(key)!.push(kp);
         }
 
@@ -76,25 +79,62 @@ export class KnowledgePointEmbeddingService implements OnModuleInit {
         }
 
         this.subEmbeddings = groups;
-
-        await fs.writeFile(savePath, JSON.stringify(groups, null, 2), 'utf8');
-        console.log('[Embedding] Saved to cache');
+        await fs.writeFile(sectionPath, JSON.stringify(groups, null, 2), 'utf8');
+        console.log('[Embedding] Saved section embedding');
     }
 
     private async getBatchEmbeddings(texts: string[]): Promise<number[][]> {
-        const res = await this.openai.embeddings.create({
-            model: 'text-embedding-ada-002',
-            input: texts,
+        const fs = await import('fs/promises');
+        const path = await import('path');
+        const cachePath = path.resolve(__dirname, '../../data/embedding-cache.json');
+
+        const uncachedTexts: string[] = [];
+        const textToIndex = new Map<string, number>();
+
+        texts.forEach((text, index) => {
+            if (!this.embeddingCache[text]) {
+                uncachedTexts.push(text);
+            }
+            textToIndex.set(text, index);
         });
-        return res.data.map((d) => d.embedding);
+
+        if (uncachedTexts.length > 0) {
+            const res = await this.openai.embeddings.create({
+                model: 'text-embedding-ada-002',
+                input: uncachedTexts,
+            });
+
+            for (let i = 0; i < uncachedTexts.length; i++) {
+                this.embeddingCache[uncachedTexts[i]] = res.data[i].embedding;
+            }
+
+            // 写入更新后的缓存
+            await fs.writeFile(cachePath, JSON.stringify(this.embeddingCache, null, 2), 'utf8');
+            console.log(`[Embedding] Cached ${uncachedTexts.length} new embeddings`);
+        }
+
+        return texts.map((text) => this.embeddingCache[text]);
     }
 
     async getEmbedding(text: string): Promise<number[]> {
+        if (this.embeddingCache[text]) {
+            return this.embeddingCache[text];
+        }
+
+        const fs = await import('fs/promises');
+        const path = await import('path');
+        const cachePath = path.resolve(__dirname, '../../data/embedding-cache.json');
+
         const res = await this.openai.embeddings.create({
             model: 'text-embedding-ada-002',
             input: [text],
         });
-        return res.data[0].embedding;
+
+        const embedding = res.data[0].embedding;
+        this.embeddingCache[text] = embedding;
+
+        await fs.writeFile(cachePath, JSON.stringify(this.embeddingCache, null, 2), 'utf8');
+        return embedding;
     }
 
     getTopMatches(inputEmbedding: number[], topN = 3): EmbeddingGroup[] {

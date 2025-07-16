@@ -34,17 +34,18 @@ export class KnowledgePointService {
         // 步骤 3：匹配 top 3 子目
         const topSubMatches = this.embedding.getTopMatches(inputEmbedding, 3);
 
-        // 步骤 4：使用 GPT 从 topN 子目中选知识点
-        for (const match of topSubMatches) {
-            const selectedId = await this.gpt.disambiguateTopicFromCandidates(
-                quiz.question,
-                match.sub,
-                match.knowledgePoints,
-            );
-            const found = match.knowledgePoints.find((kp) => kp.id === selectedId);
-            if (found) return found;
-        }
+        const subGroups = topSubMatches.map((match) => ({
+            sub: match.sub,
+            candidates: match.knowledgePoints,
+        }));
 
-        return null;
+        // 步骤 4：使用 GPT 从 topN 子目中选知识点
+        const selectedId = await this.gpt.disambiguateTopicFromCandidates(
+            inputQuizString,
+            subGroups,
+        );
+
+        const found = subGroups.flatMap(g => g.candidates).find(kp => kp.id === selectedId);
+        return found ?? null;
     }
 }
