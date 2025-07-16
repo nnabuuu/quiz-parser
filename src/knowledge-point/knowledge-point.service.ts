@@ -14,8 +14,17 @@ export class KnowledgePointService {
     ) {}
 
     async matchKnowledgePointFromQuiz(quiz: QuizItem): Promise<KnowledgePoint | null> {
+
+        let inputQuizString = `Question: ${quiz.question}`;
+        if(quiz.options) {
+            inputQuizString += ` Options: ${quiz.options}`;
+        }
+        if(quiz.answer) {
+            inputQuizString += ` Answer: ${quiz.answer}`;
+        }
+
         // 步骤 1：提取关键词
-        const keywords = await this.gpt.extractKeywordsFromQuiz(quiz.question);
+        const keywords = await this.gpt.extractKeywordsFromQuiz(inputQuizString);
         if (keywords.length === 0) return null;
 
         // 步骤 2：将关键词拼成一段用于 embedding
