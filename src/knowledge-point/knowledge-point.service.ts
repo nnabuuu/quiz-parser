@@ -15,7 +15,7 @@ export class KnowledgePointService {
         private readonly embedding: KnowledgePointEmbeddingService,
     ) {}
 
-    async matchKnowledgePointFromQuiz(quiz: QuizItem): Promise<{matched: KnowledgePoint | null, keywords: string[], candidates: EmbeddingGroup[]}> {
+    async matchKnowledgePointFromQuiz(quiz: QuizItem): Promise<{matched: KnowledgePoint | null, keywords: string[], country: string, dynasty: string, candidates: EmbeddingGroup[]}> {
 
         let inputQuizString = `Question: ${quiz.question}`;
         if(quiz.options) {
@@ -29,11 +29,11 @@ export class KnowledgePointService {
         this.logger.log(`提取出的inputQuizString: ${inputQuizString}`)
 
         // 步骤 1：提取关键词
-        const keywords = await this.gpt.extractKeywordsFromQuiz(inputQuizString);
+        const {keywords, country, dynasty} = await this.gpt.extractKeywordsFromQuiz(inputQuizString);
         if (keywords.length === 0) return null;
 
         // 步骤 2：将关键词拼成一段用于 embedding
-        const searchText = keywords.join('；');
+        const searchText = `${country}-${dynasty}-${keywords.join('；')}`;
         const inputEmbedding = await this.embedding.getEmbedding(searchText);
 
         // 步骤 3：匹配 top 3 子目
@@ -51,6 +51,6 @@ export class KnowledgePointService {
         );
 
         const found = subGroups.flatMap(g => g.candidates).find(kp => kp.id === selectedId);
-        return {matched: found ?? null, keywords, candidates: topSubMatches};
+        return {matched: found ?? null, keywords, country, dynasty, candidates: topSubMatches};
     }
 }

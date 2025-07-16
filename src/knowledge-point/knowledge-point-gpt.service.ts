@@ -2,21 +2,20 @@
 import {Injectable, Logger} from '@nestjs/common';
 import OpenAI from 'openai';
 import {ConfigService} from "@nestjs/config";
-import {KnowledgePoint, KnowledgePointStorage} from "./knowledge-point.storage";
+import {KnowledgePoint} from "./knowledge-point.storage";
 
 @Injectable()
 export class KnowledgePointGPTService {
     private readonly openai: OpenAI;
     private readonly logger = new Logger(KnowledgePointGPTService.name);
 
-    constructor(private readonly configService: ConfigService,
-                private readonly knowledgePointStorage: KnowledgePointStorage) {
+    constructor(private readonly configService: ConfigService) {
         this.openai = new OpenAI({
             apiKey: this.configService.get<string>('OPENAI_API_KEY'),
         });
     }
 
-    async extractKeywordsFromQuiz(quizText: string): Promise<string[]> {
+    async extractKeywordsFromQuiz(quizText: string): Promise<{keywords: string[], country: string, dynasty: string}> {
         const schema = {
             name: 'extract_keywords',
             description: '从试题中提取关键词列表',
@@ -31,13 +30,21 @@ export class KnowledgePointGPTService {
                         minItems: 1,
                         maxItems: 5,
                     },
+                    country: {
+                        type: 'string',
+                        description: '题目涉及的国家',
+                    },
+                    dynasty: {
+                        type: 'string',
+                        description: '题目涉及的朝代，如果国家不是中国则填：无'
+                    }
                 },
-                required: ['keywords'],
+                required: ['keywords', 'country', 'dynasty'],
                 additionalProperties: false,
             },
         };
 
-        const prompt = `你是一位历史教育专家，负责从中学历史选择题中提取/总结关键词，用于后续匹配标准教学知识点。
+        const prompt = `你是一位历史教育专家，负责从中学历史选择题中提取/总结关键词、国家、朝代，用于后续匹配标准教学知识点。
 
 请根据提供的试题内容和正确选项，从题目中提炼 1～5 个最能表达该题核心考点的关键词或短语。
 
@@ -62,10 +69,9 @@ export class KnowledgePointGPTService {
         });
 
         try {
-            const result = JSON.parse(response.choices[0].message?.content || '{}');
-            return result.keywords || [];
+            return JSON.parse(response.choices[0].message?.content);
         } catch {
-            return [];
+            return {keywords: [], country: '未知', dynasty: '无'};
         }
     }
 

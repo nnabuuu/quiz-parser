@@ -50,7 +50,7 @@ export class KnowledgePointEmbeddingService implements OnModuleInit {
         const groupMap = new Map<string, KnowledgePoint[]>();
 
         for (const kp of all) {
-            const key = kp.sub;
+            const key = `${kp.volume}:${kp.unit}:${kp.lesson}:${kp.sub}`;
             if (!groupMap.has(key)) groupMap.set(key, []);
             groupMap.get(key)!.push(kp);
         }
