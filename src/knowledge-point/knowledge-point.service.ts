@@ -16,7 +16,7 @@ export class KnowledgePointService {
         private readonly storage: KnowledgePointStorage
     ) {}
 
-    async matchKnowledgePointFromQuiz(quiz: QuizItem): Promise<{matched: KnowledgePoint | null, keywords: string[], country: string, dynasty: string, candidates: {sub: string, candidates: KnowledgePoint[]}[]}> {
+    async matchKnowledgePointFromQuiz(quiz: QuizItem): Promise<{matched?: KnowledgePoint, candidates: KnowledgePoint[], keywords: string[], country: string, dynasty: string}> {
 
         let inputQuizString = `Question: ${quiz.question}`;
         if(quiz.options) {
@@ -44,24 +44,18 @@ export class KnowledgePointService {
 
         this.logger.log(JSON.stringify(unitFilter));
 
-        // 步骤 4：匹配 top 5 子目
-        const topSubMatches = this.embedding.getTopMatches(inputEmbedding, unitFilter, 5);
-
-        const subGroups = topSubMatches.map((match) => ({
-            sub: match.sub,
-            candidates: match.knowledgePoints,
-        }));
-
-        this.logger.log(JSON.stringify(subGroups));
+        // 步骤 4：找到知识点集合
+       const kps = this.storage.getKnowledgePointsByIds(unitFilter);
 
         // 步骤 5：使用 GPT 从 topN 子目中选知识点
 
-        const selectedId = await this.gpt.disambiguateTopicFromCandidates(
+        const {selectedId, candidateIds} = await this.gpt.disambiguateTopicFromCandidates(
             inputQuizString,
-            subGroups,
+            kps,
         );
 
-        const found = subGroups.flatMap(g => g.candidates).find(kp => kp.id === selectedId);
-        return {matched: found ?? null, keywords, country, dynasty, candidates: subGroups};
+        const matched = this.storage.getKnowledgePointById(selectedId);
+        const candidates = this.storage.getKnowledgePointsByIds(candidateIds);
+        return {matched, candidates, keywords, country, dynasty};
     }
 }

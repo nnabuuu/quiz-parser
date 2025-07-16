@@ -42,6 +42,22 @@ export class KnowledgePointStorage implements OnModuleInit {
         return _.uniqBy(this.knowledgePoints, 'unit').map(kp => kp.unit);
     }
 
+    getKnowledgePointsByUnit(unit: string): KnowledgePoint[] {
+        return this.knowledgePoints.filter(kp => kp.unit === unit);
+    }
+
+    getKnowledgePointsByUnits(units: string[]): KnowledgePoint[] {
+        return this.knowledgePoints.filter(kp => units.includes(kp.unit));
+    }
+
+    getKnowledgePointById(kpId: string): KnowledgePoint | undefined {
+        return this.knowledgePoints.find(kp => kp.id === kpId);
+    }
+
+    getKnowledgePointsByIds(kpIds: string[]): KnowledgePoint[] {
+        return this.knowledgePoints.filter(kp => kpIds.includes(kp.id));
+    }
+
     private loadKnowledgePoints(): KnowledgePoint[] {
         const workbook = XLSX.readFile(this.filePath);
         const result: KnowledgePoint[] = [];

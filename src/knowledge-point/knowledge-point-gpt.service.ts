@@ -131,22 +131,67 @@ ${units.map((u, i) => `索引 ${i}: ${u}`).join('\n')}
         }
     }
 
+    getStructuredHierarchyStrings(points: KnowledgePoint[]): string[] {
+        const result: string[] = [];
 
+        const grouped = new Map<
+            string, // volume + unit
+            Map<string, // lesson
+                Map<string, // sub
+                    KnowledgePoint[] // topics
+                >
+            >
+        >();
+
+        for (const kp of points) {
+            const volumeUnit = `${kp.volume}::${kp.unit}`;
+            if (!grouped.has(volumeUnit)) {
+                grouped.set(volumeUnit, new Map());
+            }
+
+            const lessonMap = grouped.get(volumeUnit)!;
+            if (!lessonMap.has(kp.lesson)) {
+                lessonMap.set(kp.lesson, new Map());
+            }
+
+            const subMap = lessonMap.get(kp.lesson)!;
+            if (!subMap.has(kp.sub)) {
+                subMap.set(kp.sub, []);
+            }
+
+            subMap.get(kp.sub)!.push(kp);
+        }
+
+        for (const [volumeUnit, lessonMap] of grouped.entries()) {
+            const [, unit] = volumeUnit.split('::');
+            result.push(`${unit}`);
+            for (const [lesson, subMap] of lessonMap.entries()) {
+                result.push(`${lesson}`);
+                for (const [sub, points] of subMap.entries()) {
+                    result.push(`${sub}`);
+                    for (const kp of points) {
+                        result.push(`{id: ${kp.id}, topic: ${kp.topic}}`);
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
 
     async disambiguateTopicFromCandidates(
         quizText: string,
-        subGroups: { sub: string; candidates: KnowledgePoint[] }[],
-    ): Promise<string> {
-
+        knowledgePoints: KnowledgePoint[],
+    ): Promise<{ selectedId: string; candidateIds: string[] }> {
         this.logger.log(`筛选知识点：
-        ${quizText}
-        Candidates:
-        ${JSON.stringify(subGroups)}
-        `);
+${quizText}
+Candidates:
+${JSON.stringify(knowledgePoints, null, 2)}
+    `);
 
         const schema = {
             name: 'disambiguate_topic',
-            description: '从多个子目的候选知识点中选择最相关的一项',
+            description: '从多个候选知识点中选择最相关的一项，并返回最多三个备选项',
             strict: true,
             schema: {
                 type: 'object',
@@ -155,23 +200,26 @@ ${units.map((u, i) => `索引 ${i}: ${u}`).join('\n')}
                         type: 'string',
                         description: '最终选择的知识点 ID',
                     },
+                    candidateIds: {
+                        type: 'array',
+                        items: { type: 'string' },
+                        description: '最多三个与该题相关的候选知识点 ID（含 selectedId）',
+                        minItems: 1,
+                        maxItems: 3,
+                    },
                 },
-                required: ['selectedId'],
+                required: ['selectedId', 'candidateIds'],
                 additionalProperties: false,
             },
         };
 
-        const data = {
-            quiz: quizText,
-            groups: subGroups.map((group) => ({
-                sub: group.sub,
-                candidates: group.candidates.map(({ id, topic }) => ({ id, topic })),
-            })),
-        };
+        const hierarchyDescription = this.getStructuredHierarchyStrings(knowledgePoints).join('\n');
 
         const prompt = `你是一位中学历史命题与教学专家，擅长分析历史选择题背后的考查意图。
 
 请根据下列选择题内容、子目分类和提供的多个候选知识点，选择其中最贴切、最能准确覆盖该题目考查核心的知识点，并返回其 ID。
+
+同时返回不超过三个相关度较高的备选知识点 ID（包括最终选中的）。
 
 在判断知识点匹配前，请先分析这道题的“考查重点”属于以下哪类之一（但不限于）：
 - 思想主张（如某学派的理论、人物的政治观念）
@@ -182,20 +230,17 @@ ${units.map((u, i) => `索引 ${i}: ${u}`).join('\n')}
 
 你应根据题干的**设问动词、叙述语境、答案信息**来判断其真正意图，并据此从候选知识点中做出最佳匹配。
 
-在判断时请依次参考：
-1. 题干的措辞是否指向主张、制度、事件等不同类型内容；
-2. 答案所指向的核心概念，是否属于特定主题范畴；
-3. 子目的分类语义；
-4. 候选知识点之间的细微差别，避免宽泛或表面匹配。
+候选知识点结构如下：
+${hierarchyDescription}
 
-最终只返回一个最贴合的知识点的 ID。`;
+最终请返回 JSON，包含 selectedId 和 candidateIds 字段（candidateIds 应该是包含 selectedId 的最多三个候选 ID）。`;
 
         const response = await this.openai.chat.completions.create({
             model: 'gpt-4o',
             messages: [
                 {
                     role: 'user',
-                    content: prompt + '\n\n' + JSON.stringify(data, null, 2),
+                    content: prompt,
                 },
             ],
             temperature: 0,
@@ -206,14 +251,18 @@ ${units.map((u, i) => `索引 ${i}: ${u}`).join('\n')}
         });
 
         const raw = response.choices[0].message?.content;
-
         this.logger.log(`筛选结果： ${raw}`);
 
         try {
             const parsed = JSON.parse(raw || '');
-            return parsed.selectedId ?? '';
+            return {
+                selectedId: parsed.selectedId ?? '',
+                candidateIds: Array.isArray(parsed.candidateIds) ? parsed.candidateIds.slice(0, 3) : [],
+            };
         } catch {
-            return '';
+            return { selectedId: '', candidateIds: [] };
         }
     }
+
+
 }
