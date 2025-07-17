@@ -61,6 +61,7 @@ export class KnowledgePointStorage implements OnModuleInit {
     private loadKnowledgePoints(): KnowledgePoint[] {
         const workbook = XLSX.readFile(this.filePath);
         const result: KnowledgePoint[] = [];
+        let idCounter = 1;
 
         workbook.SheetNames.forEach((sheetName) => {
             const worksheet = workbook.Sheets[sheetName];
@@ -83,7 +84,6 @@ export class KnowledgePointStorage implements OnModuleInit {
                 if (rawLesson) lastLesson = rawLesson;
                 if (rawSub) lastSub = rawSub;
 
-                // 如果知识点为空但子目非空（且不是继承的），将子目作为知识点
                 if (!topic && rawSub) {
                     topic = rawSub;
                 }
@@ -93,25 +93,18 @@ export class KnowledgePointStorage implements OnModuleInit {
                     return;
                 }
 
-                const newKnowledgePoint = {
-                    id: uuidv4(),
+                const newKnowledgePoint: KnowledgePoint = {
+                    id: String(idCounter++), // 注意：为了兼容接口定义中的 `id: string`，我们使用 String 包装
                     topic,
                     volume: lastVolume,
                     unit: lastUnit,
                     lesson: lastLesson,
                     sub: lastSub,
-                }
+                };
 
                 this.logger.log(newKnowledgePoint);
 
-                result.push({
-                    id: uuidv4(),
-                    topic,
-                    volume: lastVolume,
-                    unit: lastUnit,
-                    lesson: lastLesson,
-                    sub: lastSub,
-                });
+                result.push(newKnowledgePoint);
             });
         });
 
