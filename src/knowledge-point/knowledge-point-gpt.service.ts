@@ -215,6 +215,9 @@ ${JSON.stringify(knowledgePoints, null, 2)}
 
         const hierarchyDescription = this.getStructuredHierarchyStrings(knowledgePoints).join('\n');
 
+        this.logger.log(`Prepared hierarchyDescription:`)
+        console.log(hierarchyDescription);
+
         const prompt = `你是一位中学历史命题与教学专家，擅长分析历史选择题背后的考查意图。
 
 请根据下列题目内容、选项、答案和提供的多个候选知识点，选择其中最贴切、最能准确覆盖该题目考查意图的知识点，并返回其 ID。

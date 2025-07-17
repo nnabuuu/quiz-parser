@@ -19,7 +19,7 @@ export class KnowledgePointService {
     async matchKnowledgePointFromQuiz(quiz: QuizItem): Promise<{matched?: KnowledgePoint, candidates: KnowledgePoint[], keywords: string[], country: string, dynasty: string}> {
 
         let inputQuizString = `Question: ${quiz.question}`;
-        if(quiz.options) {
+        if(quiz.options && quiz.type === 'single-choice') {
             inputQuizString += ` Options: ${quiz.options}`;
         }
         if(quiz.answer) {
