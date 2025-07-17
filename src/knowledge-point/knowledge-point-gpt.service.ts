@@ -251,8 +251,11 @@ ${JSON.stringify(knowledgePoints, null, 2)}
    - 匹配知识点应当能完整、精准地承载“答案”的定义与归属。
 
 
-候选知识点结构如下：
+### 候选知识点(包括上级目录信息)：
 ${hierarchyDescription}
+
+### Quiz
+${quizText}
 
 最终请返回 JSON，包含 selectedId 和 candidateIds 字段（candidateIds 应该是包含 selectedId 的最多三个候选 ID）。`;
 
